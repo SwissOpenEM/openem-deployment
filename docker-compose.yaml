@@ -1,0 +1,115 @@
+services:
+  ingestor:
+    image: ghcr.io/swissopenem/ingestor:main
+    build: ./
+    ports:
+      - 8001:8080
+    environment:
+      - GIN_MODE=debug
+    user: "${UID:-0}:${GID:-0}"
+    configs:
+      - source: openem-ingestor-config.yaml
+        target: /app/openem-ingestor-config.yaml
+    volumes:
+      - ${HOST_COLLECTION_PATH}:/mnt/collection_location:ro
+      # Enable this to mount network NFS share
+      # - collection_location_nfs_share:/mnt/collection_location
+
+# Enable and configure this to mount NFS share
+# volumes:
+  # collection_location_nfs_share:
+  #   driver_opts:
+  #     type: "nfs"
+  #     o: "nfsvers=3,addr=${NFS_SERVER_ADDRESS},nolock,ro"
+
+configs:
+  openem-ingestor-config.yaml:
+    content: |
+      Scicat:
+        Host: ${SCICAT_BACKEND_URL}/api/v3
+      Transfer:
+        Method: S3
+        #Method: Globus
+        S3:
+          Endpoint: "https://s3.development.psi.ch:9000"
+          TokenUrl: "https://s3.development.psi.ch:9000/token"
+          ChunkSizeMB: 1000
+          ConcurrentFiles: 2
+          PoolSize: 10
+
+        Globus:
+          ClientId: ${GLOBUS_CLIENT_ID} 
+          RedirectUrl: "https://auth.globus.org/v2/web/auth-code"
+
+          SourceCollectionId: ${GLOBUS_SOURCE_COLLECTION_ID}
+          SourcePrefixPath: ${GLOBUS_SOURCE_PREFIX_PATH}
+          # Paul Scherrer Institute - SciCat QA
+          DestinationCollectionId: "33f12025-7098-4774-bb13-5134b4d0587a"
+          DestinationTemplate: "/test2/{{ .Username }}/{{ replace .Pid \".\" \"_\" }}/{{ .DatasetFolder }}"
+          Scopes:
+            - "urn:globus:auth:scope:transfer.api.globus.org:all[*https://auth.globus.org/scopes/33f12025-7098-4774-bb13-5134b4d0587a/data_access]"
+
+      MetadataExtractors:
+        InstallationPath: ./extractors/
+        SchemasLocation: ./schemas/
+        DownloadMissingExtractors:  true
+        Timeout: 10m
+        Extractors:
+        - Name: LS
+          GithubOrg: SwissOpenEM
+          GithubProject: LS_Metadata_reader
+          Version: v0.3.0
+          Executable: LS_Metadata_reader
+          Checksum: 1bc69c35938ff6039140552312e6de7c6524024b83706ec5519c2aa47fb25f53
+          ChecksumAlg: sha256
+          CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' {{.AdditionalParameters}}"
+          AdditionalParameters:
+            - cs=2.7
+            - gain_flip_rotate="None"
+          # - epu="xmls/"
+          Methods:
+            - Name: Single Particle
+              Schema: oscem_schemas.schema.json
+            - Name: Cellular Tomography
+              Schema: oscem_schemas.schema.json
+            - Name: Tomography
+              Schema: oscem_schemas.schema.json
+            - Name: EnvironmentalTomography
+              Schema: oscem_schemas.schema.json
+
+      WebServer:
+        Auth:
+          Disable: true
+          Frontend:
+            Origin: ${SCICAT_FRONTEND_URL}
+            RedirectPath: "/ingestor"
+          SessionDuration: 28800
+          OAuth2:
+            ClientID: "ingestor"
+            RedirectURL: "${KEYCLOAK_URL}callback"
+            Scopes:
+              - email
+          OIDC:
+            IssuerURL: "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}"
+          JWT:
+            UseJWKS: true
+            JwksURL: "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs"
+            JwksSignatureMethods:
+              - RS256
+          RBAC:
+            AdminRole: "${FACILITY}-ingestor-admin"
+            CreateModifyTasksRole: "${FACILITY}-ingestor-write"
+            ViewTasksRole: "${FACILITY}-ingestor-read"
+        Paths:
+          CollectionLocation: "/mnt/collection_location"
+        MetadataExtJobs:
+          ConcurrencyLimit: 4
+          QueueSize: 200
+        Other:
+          BackendAddress: ${SCICAT_BACKEND_URL}
+          Port: 8080
+          LogLevel: Debug
+          DisableServiceAccountCheck: true
+
+
+
