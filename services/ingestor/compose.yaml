@@ -2,10 +2,9 @@ services:
   ingestor:
     image: ghcr.io/swissopenem/ingestor:main
     build: ./
-    ports:
-      - 8001:8080
-    environment:
-      - GIN_MODE=debug
+    env_file:
+      - ./config/.env
+      - ${PWD}/.env
     user: "${UID:-0}:${GID:-0}"
     configs:
       - source: openem-ingestor-config.yaml
@@ -14,9 +13,12 @@ services:
       - ${HOST_COLLECTION_PATH}:/mnt/collection_location:ro
       # Enable this to mount network NFS share
       # - collection_location_nfs_share:/mnt/collection_location
-
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ingestor.rule=Host(`emf-ingestor.psi.ch`)"
+      - "traefik.http.routers.ingestor.entrypoints=websecure"
+      - "traefik.http.routers.ingestor.tls.certresolver=leresolver"
 # Enable and configure this to mount NFS share
-# volumes:
   # collection_location_nfs_share:
   #   driver_opts:
   #     type: "nfs"
@@ -38,7 +40,7 @@ configs:
           PoolSize: 10
 
         Globus:
-          ClientId: ${GLOBUS_CLIENT_ID} 
+          ClientId: ${GLOBUS_CLIENT_ID}
           RedirectUrl: "https://auth.globus.org/v2/web/auth-code"
 
           SourceCollectionId: ${GLOBUS_SOURCE_COLLECTION_ID}
@@ -110,6 +112,3 @@ configs:
           Port: 8080
           LogLevel: Debug
           DisableServiceAccountCheck: true
-
-
-

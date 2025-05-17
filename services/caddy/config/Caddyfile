@@ -1,0 +1,9 @@
+{
+    email scicat-help@lists.psi.ch
+    local_certs
+}
+
+emf-ingestor.psi.ch {
+    reverse_proxy ingestor:8080
+    tls internal
+}

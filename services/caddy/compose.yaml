@@ -1,0 +1,22 @@
+services:
+  proxy:
+    # Use the caddy:latest image from Docker Hub
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Restart policy: restart the container unless explicitly stopped
+    restart: unless-stopped
+    # ports for Caddy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      # Mount the host Caddyfile
+      - ./config/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+volumes:
+  # persist data caddy_data
+  caddy_data:
+  # caddy_config Docker volume
+  caddy_config:
