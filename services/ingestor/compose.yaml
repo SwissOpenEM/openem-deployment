@@ -1,7 +1,6 @@
 services:
   ingestor:
     image: ghcr.io/swissopenem/ingestor:main
-    build: ./
     env_file:
       - ./config/.env
       - ${PWD}/.env

@@ -1,9 +1,8 @@
-FROM caddy:builder AS builder
+FROM caddy:2.10-builder AS builder
 
 RUN xcaddy build \
-    --with github.com/caddy-dns/rfc2136 \
-    --replace github.com/libdns/rfc2136=github.com/gucci-on-fleek/libdns-rfc2136@libdns-1.0
+    --with github.com/caddy-dns/rfc2136
 
-FROM caddy:latest
+FROM caddy:2.10
 
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
