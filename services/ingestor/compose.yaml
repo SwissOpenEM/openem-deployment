@@ -29,6 +29,7 @@ configs:
       Scicat:
         Host: ${SCICAT_BACKEND_URL}/api/v3
       Transfer:
+        StorageLocation: PSI
         Method: S3
         #Method: Globus
         S3:
@@ -42,10 +43,10 @@ configs:
           ClientId: ${GLOBUS_CLIENT_ID}
           RedirectUrl: "https://auth.globus.org/v2/web/auth-code"
 
-          SourceCollectionId: ${GLOBUS_SOURCE_COLLECTION_ID}
-          SourcePrefixPath: ${GLOBUS_SOURCE_PREFIX_PATH}
+          SourceCollectionID: ${GLOBUS_SOURCE_COLLECTION_ID}
+          CollectionRootPath: ${GLOBUS_COLLECTION_ROOT_PATH}
           # Paul Scherrer Institute - SciCat QA
-          DestinationCollectionId: "33f12025-7098-4774-bb13-5134b4d0587a"
+          DestinationCollectionID: "33f12025-7098-4774-bb13-5134b4d0587a"
           DestinationTemplate: "/test2/{{ .Username }}/{{ replace .Pid \".\" \"_\" }}/{{ .DatasetFolder }}"
           Scopes:
             - "urn:globus:auth:scope:transfer.api.globus.org:all[*https://auth.globus.org/scopes/33f12025-7098-4774-bb13-5134b4d0587a/data_access]"
@@ -53,8 +54,6 @@ configs:
       MetadataExtractors:
         InstallationPath: ./extractors/
         SchemasLocation: ./schemas/
-        DownloadMissingExtractors:  true
-        Timeout: 10m
         Extractors:
         - Name: LS
           GithubOrg: SwissOpenEM
@@ -70,24 +69,28 @@ configs:
           # - epu="xmls/"
           Methods:
             - Name: Single Particle
-              Schema: oscem_schemas.schema.json
+              Schema: oscem_schemas_spa.schema.json
+              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/spa/jsonschema/oscem_schemas_spa.schema.json
             - Name: Cellular Tomography
-              Schema: oscem_schemas.schema.json
+              Schema: oscem_cellular_tomo.json
+              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/cellular_tomo/jsonschema/oscem_schemas_cellular_tomo.schema.json
             - Name: Tomography
-              Schema: oscem_schemas.schema.json
+              Schema: oscem_tomo.json
+              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/subtomo/jsonschema/oscem_schemas_subtomo.schema.json
             - Name: EnvironmentalTomography
-              Schema: oscem_schemas.schema.json
+              Schema: oscem_env_tomo.json
+              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/env_tomo/jsonschema/oscem_schemas_env_tomo.schema.json
 
       WebServer:
         Auth:
-          Disable: true
+          Disable: false
           Frontend:
             Origin: ${SCICAT_FRONTEND_URL}
             RedirectPath: "/ingestor"
           SessionDuration: 28800
           OAuth2:
-            ClientID: "ingestor"
-            RedirectURL: "${KEYCLOAK_URL}callback"
+            ClientID: "${KEYCLOAK_CLIENT_ID}"
+            RedirectURL: "${INGESTOR_DOMAIN}/callback"
             Scopes:
               - email
           OIDC:
@@ -98,11 +101,12 @@ configs:
             JwksSignatureMethods:
               - RS256
           RBAC:
-            AdminRole: "${FACILITY}-ingestor-admin"
-            CreateModifyTasksRole: "${FACILITY}-ingestor-write"
-            ViewTasksRole: "${FACILITY}-ingestor-read"
+            AdminRole: "ingestor-admin"
+            CreateModifyTasksRole: "ingestor-write"
+            ViewTasksRole: "ingestor-read"
         Paths:
-          CollectionLocation: "/mnt/collection_location"
+          CollectionLocations:
+            emf: "/mnt/collection_location"
         MetadataExtJobs:
           ConcurrencyLimit: 4
           QueueSize: 200

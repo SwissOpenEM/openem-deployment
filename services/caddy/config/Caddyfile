@@ -1,9 +1,10 @@
 {
-    email scicat-help@lists.psi.ch
-    local_certs
+	email admin@example.com
+	local_certs
 }
 
 emf-ingestor.psi.ch {
-    reverse_proxy ingestor:8080
-    tls internal
+	reverse_proxy ingestor:8080
+	tls internal
+	#tls /etc/letsencrypt/live/emf-ingestor.psi.ch/fullchain.pem /etc/letsencrypt/live/emf-ingestor.psi.ch/privkey.pem
 }
