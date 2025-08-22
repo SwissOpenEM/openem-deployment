@@ -77,9 +77,12 @@ configs:
             - Name: Tomography
               Schema: oscem_tomo.json
               Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/subtomo/jsonschema/oscem_schemas_subtomo.schema.json
-            - Name: EnvironmentalTomography
+            - Name: Environmental Tomography
               Schema: oscem_env_tomo.json
               Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/env_tomo/jsonschema/oscem_schemas_env_tomo.schema.json
+            - Name: General
+              Schema: oscem_general.json
+              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/general/jsonschema/oscem_schemas_general.schema.json
 
       WebServer:
         Auth:
