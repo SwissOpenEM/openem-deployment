@@ -83,9 +83,9 @@ configs:
 
           - Name: MS
             GithubOrg: SwissOpenEM
-            GithubProject: LS_Metadata_reader
+            GithubProject: MS_Metadata_reader
             Version: v1.0.0
-            Executable: ms_reader
+            Executable: MS_Metadata_reader
             Checksum: d5bb07787544dea4db8d02f6276369e9726a098228392001229ae9d9d716cdf9
             ChecksumAlg: sha256
             CommandLineTemplate: "'{{.SourceFolder}}' '{{.OutputFile}}'"
