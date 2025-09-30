@@ -1,4 +1,4 @@
-services:
+git statusservices:
   ingestor:
     image: ghcr.io/swissopenem/ingestor:main
     env_file:
@@ -55,31 +55,44 @@ configs:
         InstallationPath: ./extractors/
         SchemasLocation: ./schemas/
         Extractors:
-        - Name: LS
-          GithubOrg: SwissOpenEM
-          GithubProject: LS_Metadata_reader
-          Version: v0.3.0
-          Executable: LS_Metadata_reader
-          Checksum: 1bc69c35938ff6039140552312e6de7c6524024b83706ec5519c2aa47fb25f53
-          ChecksumAlg: sha256
-          CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' {{.AdditionalParameters}}"
-          AdditionalParameters:
-            - cs=2.7
-            - gain_flip_rotate="None"
-          # - epu="xmls/"
-          Methods:
-            - Name: Single Particle
-              Schema: oscem_schemas_spa.schema.json
-              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/spa/jsonschema/oscem_schemas_spa.schema.json
-            - Name: Cellular Tomography
-              Schema: oscem_cellular_tomo.json
-              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/cellular_tomo/jsonschema/oscem_schemas_cellular_tomo.schema.json
-            - Name: Tomography
-              Schema: oscem_tomo.json
-              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/subtomo/jsonschema/oscem_schemas_subtomo.schema.json
-            - Name: EnvironmentalTomography
-              Schema: oscem_env_tomo.json
-              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/env_tomo/jsonschema/oscem_schemas_env_tomo.schema.json
+          - Name: LS
+            GithubOrg: SwissOpenEM
+            GithubProject: LS_Metadata_reader
+            Version: v2.0.1
+            Executable: LS_Metadata_reader
+            Checksum: 83ae1b2d469cec10fdcc3ad7cb6c824a389e501e7142417792f2ac836ab174c3
+            ChecksumAlg: sha256
+            CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' --cs 2.7 --folder_filter=^.*(?i)(metadata).*$"
+            AdditionalParameters:
+            - Param1=2.7
+            - Param2="None"
+            - Param3="xmls/"
+            Methods:
+              - Name: Single Particle
+                Schema: oscem_schemas_spa.schema.json
+                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/spa/jsonschema/oscem_schemas_spa.schema.json
+              - Name: Cellular Tomography
+                Schema: oscem_cellular_tomo.json
+                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/cellular_tomo/jsonschema/oscem_schemas_cellular_tomo.schema.json
+              - Name: Tomography
+                Schema: oscem_tomo.json
+                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/subtomo/jsonschema/oscem_schemas_subtomo.schema.json
+              - Name: EnvironmentalTomography
+                Schema: oscem_env_tomo.json
+                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/env_tomo/jsonschema/oscem_schemas_env_tomo.schema.json
+
+          - Name: MS
+            GithubOrg: SwissOpenEM
+            GithubProject: LS_Metadata_reader
+            Version: v1.0.0
+            Executable: ms_reader
+            Checksum: d5bb07787544dea4db8d02f6276369e9726a098228392001229ae9d9d716cdf9
+            ChecksumAlg: sha256
+            CommandLineTemplate: "'{{.SourceFolder}}' '{{.OutputFile}}'"
+            Methods:
+              - Name: General
+                Schema: oscem_general.json
+                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/general/jsonschema/oscem_schemas_general.schema.json      
 
       WebServer:
         Auth:
@@ -111,7 +124,7 @@ configs:
           ConcurrencyLimit: 4
           QueueSize: 200
         Other:
-          BackendAddress: ${SCICAT_BACKEND_URL}
+          BackendAddress: ${INGESTOR_DOMAIN}
           Port: 8080
           LogLevel: Debug
           DisableServiceAccountCheck: true
