@@ -58,9 +58,9 @@ configs:
         - Name: LS
           GithubOrg: SwissOpenEM
           GithubProject: LS_Metadata_reader
-          Version: v0.3.0
+          Version: v2.0.0
           Executable: LS_Metadata_reader
-          Checksum: 1bc69c35938ff6039140552312e6de7c6524024b83706ec5519c2aa47fb25f53
+          Checksum: 826a0ff9cbb2e38854d5da12f0238d5121fe7dcfdd70eb989623f333db456e4d
           ChecksumAlg: sha256
           CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' {{.AdditionalParameters}}"
           AdditionalParameters:
@@ -77,9 +77,12 @@ configs:
             - Name: Tomography
               Schema: oscem_tomo.json
               Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/subtomo/jsonschema/oscem_schemas_subtomo.schema.json
-            - Name: EnvironmentalTomography
+            - Name: Environmental Tomography
               Schema: oscem_env_tomo.json
               Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/env_tomo/jsonschema/oscem_schemas_env_tomo.schema.json
+            - Name: General
+              Schema: oscem_general.json
+              Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/any_fix/project/general/jsonschema/oscem_schemas_general.schema.json
 
       WebServer:
         Auth:
