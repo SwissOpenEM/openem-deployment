@@ -1,4 +1,4 @@
-git statusservices:
+services:
   ingestor:
     image: ghcr.io/swissopenem/ingestor:main
     env_file:
