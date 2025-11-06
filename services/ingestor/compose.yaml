@@ -126,5 +126,6 @@ configs:
         Other:
           BackendAddress: ${INGESTOR_DOMAIN}
           Port: 8080
+          SecureCookies: true​
           LogLevel: Debug
           DisableServiceAccountCheck: true
