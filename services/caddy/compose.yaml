@@ -17,6 +17,8 @@ services:
       - caddy_config:/config
       #- /etc/letsencrypt/live/emf-ingestor.psi.ch/fullchain.pem:/etc/letsencrypt/live/emf-ingestor.psi.ch/fullchain.pem:ro
       #- /etc/letsencrypt/live/emf-ingestor.psi.ch/privkey.pem:/etc/letsencrypt/live/emf-ingestor.psi.ch/privkey.pem:ro
+    profiles:
+      - with_proxy
 volumes:
   # persist data caddy_data
   caddy_data:

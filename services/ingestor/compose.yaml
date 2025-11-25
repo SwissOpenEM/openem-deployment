@@ -1,27 +1,21 @@
 services:
   ingestor:
-    image: ghcr.io/swissopenem/ingestor:main
+    image: ghcr.io/swissopenem/ingestor:${INGESTOR_VERSION:-latest}
+    container_name: openem-ingestor
+    ports:
+      - "8080:8080"
     env_file:
-      - ./config/.env
-      - ${PWD}/.env
+      - ${PWD}/.env.example
+    environment:
+      GIN_MODE: release
     user: "${UID:-0}:${GID:-0}"
     configs:
       - source: openem-ingestor-config.yaml
         target: /app/openem-ingestor-config.yaml
+    restart:
+      unless-stopped
     volumes:
-      - ${HOST_COLLECTION_PATH}:/mnt/collection_location:ro
-      # Enable this to mount network NFS share
-      # - collection_location_nfs_share:/mnt/collection_location
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ingestor.rule=Host(`emf-ingestor.psi.ch`)"
-      - "traefik.http.routers.ingestor.entrypoints=websecure"
-      - "traefik.http.routers.ingestor.tls.certresolver=leresolver"
-# Enable and configure this to mount NFS share
-  # collection_location_nfs_share:
-  #   driver_opts:
-  #     type: "nfs"
-  #     o: "nfsvers=3,addr=${NFS_SERVER_ADDRESS},nolock,ro"
+      - ${HOST_COLLECTION_PATH}:${HOST_COLLECTION_PATH}:ro
 
 configs:
   openem-ingestor-config.yaml:
@@ -30,26 +24,12 @@ configs:
         Host: ${SCICAT_BACKEND_URL}/api/v3
       Transfer:
         StorageLocation: PSI
-        Method: S3
-        #Method: Globus
-        S3:
-          Endpoint: "https://s3.development.psi.ch:9000"
-          TokenUrl: "https://s3.development.psi.ch:9000/token"
-          ChunkSizeMB: 1000
-          ConcurrentFiles: 2
-          PoolSize: 10
-
-        Globus:
-          ClientId: ${GLOBUS_CLIENT_ID}
-          RedirectUrl: "https://auth.globus.org/v2/web/auth-code"
-
-          SourceCollectionID: ${GLOBUS_SOURCE_COLLECTION_ID}
+        Method: ExtGlobus
+        ExtGlobus:
+          TransferServiceUrl: ${GLOBUS_TRANSFER_PROXY_URL}
+          SrcFacility: ${GLOBUS_SOURCE_FACILITY}
+          DstFacility: ${GLOBUS_DESTINATION_FACILITY}
           CollectionRootPath: ${GLOBUS_COLLECTION_ROOT_PATH}
-          # Paul Scherrer Institute - SciCat QA
-          DestinationCollectionID: "33f12025-7098-4774-bb13-5134b4d0587a"
-          DestinationTemplate: "/test2/{{ .Username }}/{{ replace .Pid \".\" \"_\" }}/{{ .DatasetFolder }}"
-          Scopes:
-            - "urn:globus:auth:scope:transfer.api.globus.org:all[*https://auth.globus.org/scopes/33f12025-7098-4774-bb13-5134b4d0587a/data_access]"
 
       MetadataExtractors:
         InstallationPath: ./extractors/
@@ -62,37 +42,33 @@ configs:
             Executable: LS_Metadata_reader
             Checksum: 83ae1b2d469cec10fdcc3ad7cb6c824a389e501e7142417792f2ac836ab174c3
             ChecksumAlg: sha256
-            CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' --cs 2.7 --folder_filter=^.*(?i)(metadata).*$"
-            AdditionalParameters:
-            - Param1=2.7
-            - Param2="None"
-            - Param3="xmls/"
+            CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' ${LIFESCIENCE_EXTRACTOR_ADDITIONAL_PARAMS}"
             Methods:
               - Name: Single Particle
                 Schema: oscem_schemas_spa.schema.json
-                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/spa/jsonschema/oscem_schemas_spa.schema.json
+                Url: https://w3id.org/oscem-schemas/latest/spa/jsonschema/oscem_schemas_spa.schema.json
               - Name: Cellular Tomography
                 Schema: oscem_cellular_tomo.json
-                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/cellular_tomo/jsonschema/oscem_schemas_cellular_tomo.schema.json
+                Url: https://w3id.org/oscem-schemas/latest/cellular_tomo/jsonschema/oscem_schemas_cellular_tomo.schema.json
               - Name: Tomography
                 Schema: oscem_tomo.json
-                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/subtomo/jsonschema/oscem_schemas_subtomo.schema.json
+                Url: https://w3id.org/oscem-schemas/latest/subtomo/jsonschema/oscem_schemas_subtomo.schema.json
               - Name: Environmental Tomography
                 Schema: oscem_env_tomo.json
-                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/env_tomo/jsonschema/oscem_schemas_env_tomo.schema.json
+                Url: https://w3id.org/oscem-schemas/latest/env_tomo/jsonschema/oscem_schemas_env_tomo.schema.json
 
           - Name: MS
             GithubOrg: SwissOpenEM
             GithubProject: MS_Metadata_reader
-            Version: v1.0.0
+            Version: v1.0.3
             Executable: MS_Metadata_reader
-            Checksum: d5bb07787544dea4db8d02f6276369e9726a098228392001229ae9d9d716cdf9
+            Checksum: 56925ded88d6719d42eaafe66f98fce43a67f0132d6488ece8bcbcfd5f0704a3
             ChecksumAlg: sha256
             CommandLineTemplate: "'{{.SourceFolder}}' '{{.OutputFile}}'"
             Methods:
               - Name: Material Science
                 Schema: oscem_general.json
-                Url: https://raw.githubusercontent.com/osc-em/OSCEM_Schemas/refs/heads/main/project/general/jsonschema/oscem_schemas_general.schema.json      
+                Url: https://w3id.org/oscem-schemas/latest/general/jsonschema/oscem_schemas_general.schema.json
 
       WebServer:
         Auth:
@@ -119,13 +95,13 @@ configs:
             ViewTasksRole: "ingestor-read"
         Paths:
           CollectionLocations:
-            emf: "/mnt/collection_location"
+            ${HOST_COLLECTION_NAME}: ${HOST_COLLECTION_PATH}
         MetadataExtJobs:
           ConcurrencyLimit: 4
           QueueSize: 200
         Other:
           BackendAddress: ${INGESTOR_DOMAIN}
           Port: 8080
-          SecureCookies: true​
-          LogLevel: Debug
+          SecureCookies: true
+          LogLevel: Info 
           DisableServiceAccountCheck: true
