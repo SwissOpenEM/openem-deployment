@@ -17,7 +17,7 @@ docker compose up -d
 The version endpoint can be used as a health check:
 
 ```sh
-curl -i http://localhost:8001/version
+curl -i http://localhost:8080/version
 ```
 
 There is also a Swagger documentation page available at <http://localhost:8001/docs/index.html>.
@@ -40,5 +40,5 @@ within the proxy container. This will require modifying `services/caddy/compose.
 Start the services with the profile `with_proxy` specified:
 
 ```sh
-docker compose --profile with_proxy up -d 
+docker compose --profile with_proxy up -d
 ```
