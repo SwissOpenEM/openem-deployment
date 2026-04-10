@@ -1,3 +1,10 @@
+# You can use this top-level compose if you only use one container.
+# Otherwise, use compose.sh instead
 include:
   - services/ingestor/compose.yaml
-  - services/caddy/compose.yaml
+  - services/proxy/compose.yaml
+
+networks:
+  ingestor-net:
+    name: ingestor-net
+    external: false

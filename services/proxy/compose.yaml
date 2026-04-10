@@ -1,0 +1,34 @@
+services:
+  proxy:
+    image: "traefik:v3.6"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - ingestor-net
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=ingestor-net"
+      - "--entryPoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entryPoints.websecure.address=:443"
+      - "--entryPoints.websecure.http.tls=true"
+      - "--providers.file.filename=/etc/traefik/tls.yml"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "${TLS_CERT_FILE:-/etc/letsencrypt/live/${INGESTOR_DOMAIN}/fullchain.pem}:/certs/cert.pem:ro"
+      - "${TLS_KEY_FILE:-/etc/letsencrypt/live/${INGESTOR_DOMAIN}/privkey.pem}:/certs/privkey.pem:ro"
+      - "./config/tls.yml:/etc/traefik/tls.yml:ro"
+    profiles:
+      - with_proxy
+
+networks:
+  ingestor-net:
+    external: true
