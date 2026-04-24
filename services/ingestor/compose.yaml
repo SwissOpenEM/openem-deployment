@@ -1,13 +1,15 @@
 services:
   ingestor:
     image: ghcr.io/swissopenem/ingestor:${INGESTOR_VERSION:-latest}
-    container_name: openem-ingestor
+    pull_policy: always
+    networks:
+      - ingestor-net
     ports:
-      - "8080:8080"
-    env_file:
-      - ${PWD}/.env
+      - ${INGESTOR_PORT:-8080}:8080
     environment:
-      GIN_MODE: release
+      - "GIN_MODE=${GIN_MODE:-release}"
+      - INGESTOR_SERVICE_USER_NAME
+      - INGESTOR_SERVICE_USER_PASS
     user: "${UID:-0}:${GID:-0}"
     configs:
       - source: openem-ingestor-config.yaml
@@ -15,21 +17,38 @@ services:
     restart:
       unless-stopped
     volumes:
-      - ${HOST_COLLECTION_PATH}:${HOST_COLLECTION_PATH}:ro
+      - ${HOST_COLLECTION_PATH?No HOST_COLLECTION_PATH specified}:${HOST_COLLECTION_PATH}:ro
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ingestor${DEPLOYMENT:+-${DEPLOYMENT}}.entrypoints=websecure"
+      - "traefik.http.services.ingestor${DEPLOYMENT:+-${DEPLOYMENT}}.loadbalancer.server.port=8080"
+      - "traefik.http.routers.ingestor${DEPLOYMENT:+-${DEPLOYMENT}}.tls=true"
+      # Route //INGESTOR_DOMAIN/INGESTOR_PATH_PREFIX
+      - "traefik.http.routers.ingestor${DEPLOYMENT:+-${DEPLOYMENT}}.rule=Host(`${INGESTOR_DOMAIN}`)${INGESTOR_PATH_PREFIX:+ && PathPrefix(`${INGESTOR_PATH_PREFIX}`)}"
+      # Strip INGESTOR_PATH_PREFIX
+      - "${INGESTOR_PATH_PREFIX:+traefik.http.middlewares.strip${DEPLOYMENT:+-${DEPLOYMENT}}.stripprefix.prefixes=${INGESTOR_PATH_PREFIX}}"
+      - "${INGESTOR_PATH_PREFIX:+traefik.http.routers.ingestor${DEPLOYMENT:+-${DEPLOYMENT}}.middlewares=strip${DEPLOYMENT:+-${DEPLOYMENT}}@docker}"
+
+
+networks:
+  ingestor-net:
+    external: true
+
 
 configs:
   openem-ingestor-config.yaml:
     content: |
       Scicat:
-        Host: ${SCICAT_BACKEND_URL}/api/v3
+        Host: ${SCICAT_BACKEND_URL:?No SCICAT_BACKEND_URL specified}/api/v3
       Transfer:
         StorageLocation: PSI
-        Method: ExtGlobus
+        Method: ${TRANSFER_METHOD:-ExtGlobus}
         ExtGlobus:
-          TransferServiceUrl: ${GLOBUS_TRANSFER_PROXY_URL}
-          SrcFacility: ${GLOBUS_SOURCE_FACILITY}
-          DstFacility: ${GLOBUS_DESTINATION_FACILITY}
-          CollectionRootPath: ${GLOBUS_COLLECTION_ROOT_PATH}
+          TransferServiceUrl: ${GLOBUS_TRANSFER_PROXY_URL:-}
+          SrcFacility: ${GLOBUS_SOURCE_FACILITY:-}
+          DstFacility: ${GLOBUS_DESTINATION_FACILITY:-}
+          CollectionRootPath: ${GLOBUS_COLLECTION_ROOT_PATH:-${HOST_COLLECTION_PATH}}
 
       MetadataExtractors:
         InstallationPath: ./extractors/
@@ -42,7 +61,7 @@ configs:
             Executable: oscem-extractor-life
             Checksum: a596ade8dd115b57fb8d5aad56b96b0e0ad2820bf57252443c21d4c80278ca6e
             ChecksumAlg: sha256
-            CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' ${LIFESCIENCE_EXTRACTOR_ADDITIONAL_PARAMS}"
+            CommandLineTemplate: "-i '{{.SourceFolder}}' -o '{{.OutputFile}}' ${LIFESCIENCE_EXTRACTOR_ADDITIONAL_PARAMS:-}"
             Methods:
               - Name: Single Particle
                 Schema: oscem_schemas_spa.schema.json
@@ -74,19 +93,19 @@ configs:
         Auth:
           Disable: false
           Frontend:
-            Origin: ${SCICAT_FRONTEND_URL}
+            Origin: ${SCICAT_FRONTEND_URL:?No SCICAT_FRONTEND_URL specified}
             RedirectPath: "/ingestor"
           SessionDuration: 28800
           OAuth2:
-            ClientID: "${KEYCLOAK_CLIENT_ID}"
-            RedirectURL: "${INGESTOR_DOMAIN}/callback"
+            ClientID: "${OIDC_CLIENT_ID:-openem-ingestor-${FACILITY:?Either set OIDC_CLIENT_ID or FACILITY}}"
+            RedirectURL: "https://${INGESTOR_DOMAIN?No INGESTOR_DOMAIN specified}${INGESTOR_PATH_PREFIX:-}/callback"
             Scopes:
               - email
           OIDC:
-            IssuerURL: "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}"
+            IssuerURL: "${OIDC_ISSUER:?No OIDC_ISSUER specified}"
           JWT:
             UseJWKS: true
-            JwksURL: "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs"
+            JwksURL: "${OIDC_ISSUER}/protocol/openid-connect/certs"
             JwksSignatureMethods:
               - RS256
           RBAC:
@@ -95,13 +114,13 @@ configs:
             ViewTasksRole: "ingestor-read"
         Paths:
           CollectionLocations:
-            ${HOST_COLLECTION_NAME}: ${HOST_COLLECTION_PATH}
+            "${HOST_COLLECTION_NAME:-Data Root}": "${HOST_COLLECTION_PATH}"
         MetadataExtJobs:
           ConcurrencyLimit: 4
           QueueSize: 200
         Other:
-          BackendAddress: ${INGESTOR_DOMAIN}
-          Port: 8080
+          BackendAddress: https://${INGESTOR_DOMAIN}${INGESTOR_PATH_PREFIX:-}
+          Port: ${PORT:-8080}
           SecureCookies: true
-          LogLevel: Info
+          LogLevel: ${LOG_LEVEL:-Info}
           DisableServiceAccountCheck: true
