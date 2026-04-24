@@ -70,6 +70,11 @@ Some variables are used to create the configuration file, while others are passe
 ingestor at runtime. Detailed documentation about runtime variables can be found at
 <https://www.openem.ch/documentation/admin/installation/ingestor>
 
+You can preview the configuration post-templating using
+
+```sh
+./compose.sh qa config
+```
 
 ## Launching the service
 
