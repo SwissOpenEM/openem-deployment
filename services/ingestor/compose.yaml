@@ -98,7 +98,7 @@ configs:
           SessionDuration: 28800
           OAuth2:
             ClientID: "${OIDC_CLIENT_ID:-openem-ingestor-${FACILITY:?Either set OIDC_CLIENT_ID or FACILITY}}"
-            RedirectURL: "https://${INGESTOR_DOMAIN?No INGESTOR_DOMAIN specified}/callback"
+            RedirectURL: "https://${INGESTOR_DOMAIN?No INGESTOR_DOMAIN specified}${INGESTOR_PATH_PREFIX:-}/callback"
             Scopes:
               - email
           OIDC:
