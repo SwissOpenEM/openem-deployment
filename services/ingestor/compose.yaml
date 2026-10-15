@@ -41,6 +41,7 @@ configs:
     content: |
       Scicat:
         Host: ${SCICAT_BACKEND_URL:?No SCICAT_BACKEND_URL specified}/api/v3
+        CreationLocations: [${CREATION_LOCATIONS}]
       Transfer:
         StorageLocation: PSI
         Method: ${TRANSFER_METHOD:-ExtGlobus}
