@@ -95,5 +95,5 @@ if [ "$PROXY" = true ]; then
     --profile with_proxy \
     --env-file .env \
     -f services/proxy/compose.yaml \
-    "$@" proxy
+    "$@"
 fi
